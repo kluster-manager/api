@@ -242,8 +242,6 @@ golang.org/x/mod/module
 golang.org/x/mod/semver
 # golang.org/x/net v0.7.0
 ## explicit; go 1.17
-golang.org/x/net/context
-golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
@@ -251,8 +249,8 @@ golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
-# golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
-## explicit; go 1.11
+# golang.org/x/oauth2 v0.27.0
+## explicit; go 1.23.0
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
 # golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
@@ -314,15 +312,6 @@ golang.org/x/tools/internal/imports
 golang.org/x/tools/internal/packagesinternal
 golang.org/x/tools/internal/typeparams
 golang.org/x/tools/internal/typesinternal
-# google.golang.org/appengine v1.6.7
-## explicit; go 1.11
-google.golang.org/appengine/internal
-google.golang.org/appengine/internal/base
-google.golang.org/appengine/internal/datastore
-google.golang.org/appengine/internal/log
-google.golang.org/appengine/internal/remote_api
-google.golang.org/appengine/internal/urlfetch
-google.golang.org/appengine/urlfetch
 # google.golang.org/protobuf v1.28.1
 ## explicit; go 1.11
 google.golang.org/protobuf/encoding/prototext
