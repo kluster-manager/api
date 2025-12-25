@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/cloudevents/sdk-go/protocol/mqtt_paho/v2 v2.0.0-20230807084042-7f5ef3992769
-	github.com/cloudevents/sdk-go/v2 v2.14.0
+	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/eclipse/paho.golang v0.11.0
 	github.com/evanphx/json-patch v4.12.0+incompatible
 	github.com/gogo/protobuf v1.3.2
