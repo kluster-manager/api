@@ -12,6 +12,8 @@ jobs:
   release:
     name: release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: get release version
         run: |
