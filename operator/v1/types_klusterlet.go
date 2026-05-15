@@ -1,3 +1,4 @@
+// Copyright Contributors to the Open Cluster Management project
 package v1
 
 import (
@@ -28,7 +29,7 @@ type Klusterlet struct {
 
 // KlusterletSpec represents the desired deployment configuration of Klusterlet agent.
 type KlusterletSpec struct {
-	// Namespace is the namespace to deploy the agent on the managed cluster.
+	// namespace is the namespace to deploy the agent on the managed cluster.
 	// The namespace must have a prefix of "open-cluster-management-", and if it is not set,
 	// the namespace of "open-cluster-management-agent" is used to deploy agent.
 	// In addition, the add-ons are deployed to the namespace of "{Namespace}-addon".
@@ -56,7 +57,7 @@ type KlusterletSpec struct {
 	// +optional
 	ImagePullSpec string `json:"imagePullSpec,omitempty"`
 
-	// ClusterName is the name of the managed cluster to be created on hub.
+	// clusterName is the name of the managed cluster to be created on hub.
 	// The Klusterlet agent generates a random name if it is not set, or discovers the appropriate cluster name on OpenShift.
 	// +optional
 	// +kubebuilder:validation:MaxLength=63
@@ -151,13 +152,17 @@ type RegistrationConfiguration struct {
 	// +optional
 	ClusterAnnotations map[string]string `json:"clusterAnnotations,omitempty"`
 
-	// KubeAPIQPS indicates the maximum QPS while talking with apiserver of hub cluster from the spoke cluster.
+	// ClusterLabels is labels set on ManagedCluster when creating only, other actors can update it afterwards.
+	// +optional
+	ClusterLabels map[string]string `json:"clusterLabels,omitempty"`
+
+	// KubeAPIQPS indicates the maximum QPS while talking with apiserver on the spoke cluster.
 	// If it is set empty, use the default value: 50
 	// +optional
 	// +kubebuilder:default:=50
 	KubeAPIQPS int32 `json:"kubeAPIQPS,omitempty"`
 
-	// KubeAPIBurst indicates the maximum burst of the throttle while talking with apiserver of hub cluster from the spoke cluster.
+	// KubeAPIBurst indicates the maximum burst of the throttle while talking with apiserver on the spoke cluster.
 	// If it is set empty, use the default value: 100
 	// +optional
 	// +kubebuilder:default:=100
@@ -172,6 +177,87 @@ type RegistrationConfiguration struct {
 	// But if the user updates the content of a failed bootstrapkubeconfig, the "failed" mark will be cleared.
 	// +optional
 	BootstrapKubeConfigs BootstrapKubeConfigs `json:"bootstrapKubeConfigs,omitempty"`
+
+	// This provides driver details required to register klusterlet agent with hub
+	// +optional
+	RegistrationDriver RegistrationDriver `json:"registrationDriver,omitempty"`
+
+	// This provides driver details required to register add-ons with hub for kubeClient type
+	// +optional
+	AddOnKubeClientRegistrationDriver *AddOnRegistrationDriver `json:"addOnKubeClientRegistrationDriver,omitempty"`
+
+	// ClusterClaimConfiguration represents the configuration of ClusterClaim
+	// Effective only when the `ClusterClaim` feature gate is enabled.
+	// +optional
+	ClusterClaimConfiguration *ClusterClaimConfiguration `json:"clusterClaimConfiguration,omitempty"`
+}
+
+// ClusterClaimConfiguration represents the configuration of ClusterClaim
+type ClusterClaimConfiguration struct {
+	// Maximum number of custom ClusterClaims allowed.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default:=20
+	// +required
+	MaxCustomClusterClaims int32 `json:"maxCustomClusterClaims"`
+
+	// Custom suffixes for reserved ClusterClaims.
+	// +optional
+	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:items:MinLength=1
+	// +kubebuilder:validation:items:MaxLength=64
+	ReservedClusterClaimSuffixes []string `json:"reservedClusterClaimSuffixes,omitempty"`
+}
+
+type RegistrationDriver struct {
+	// Type of the authentication used by managedcluster to register as well as pull work from hub. Possible values are csr and awsirsa.
+	// +required
+	// +kubebuilder:default:=csr
+	// +kubebuilder:validation:Enum=csr;awsirsa;grpc
+	AuthType string `json:"authType,omitempty"`
+
+	// Contain the details required for registering with hub cluster (ie: an EKS cluster) using AWS IAM roles for service account.
+	// This is required only when the authType is awsirsa.
+	AwsIrsa *AwsIrsa `json:"awsIrsa,omitempty"`
+}
+
+type AwsIrsa struct {
+	// The arn of the hub cluster (ie: an EKS cluster). This will be required to pass information to hub, which hub will use to create IAM identities for this klusterlet.
+	// Example - arn:eks:us-west-2:12345678910:cluster/hub-cluster1.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern=`^arn:aws:eks:([a-zA-Z0-9-]+):(\d{12}):cluster/([a-zA-Z0-9-]+)$`
+	HubClusterArn string `json:"hubClusterArn"`
+	// The arn of the managed cluster (ie: an EKS cluster). This will be required to generate the md5hash which will be used as a suffix to create IAM role on hub
+	// as well as used by kluslerlet-agent, to assume role suffixed with the md5hash, on startup.
+	// Example - arn:eks:us-west-2:12345678910:cluster/managed-cluster1.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern=`^arn:aws:eks:([a-zA-Z0-9-]+):(\d{12}):cluster/([a-zA-Z0-9-]+)$`
+	ManagedClusterArn string `json:"managedClusterArn"`
+}
+
+type AddOnRegistrationDriver struct {
+	// AuthType is the authentication driver used for add-on registration.
+	// Possible values are csr and token.
+	// Currently, this field only affects kubeClient type add-on registration. The csr type add-on registration always uses csr driver.
+	// In the future, this may be extended to customize authentication for csr type add-on registration as well.
+	// +optional
+	// +kubebuilder:validation:Enum=csr;token
+	AuthType string `json:"authType,omitempty"`
+
+	// Token contains the configuration for token-based registration.
+	// +optional
+	Token *TokenConfig `json:"token,omitempty"`
+}
+
+type TokenConfig struct {
+	// ExpirationSeconds represents the seconds of a token to expire.
+	// If it is not set or 0, the default duration will be used, which is
+	// the same as the certificate expiration set by the hub cluster's
+	// kube-controller-manager (typically 1 year).
+	// The minimum valid value for production use is 3600 (1 hour), though smaller values are allowed for testing.
+	// +optional
+	ExpirationSeconds int64 `json:"expirationSeconds,omitempty"`
 }
 
 type TypeBootstrapKubeConfigs string
@@ -192,7 +278,7 @@ type BootstrapKubeConfigs struct {
 	// LocalSecretsConfig include a list of secrets that contains the kubeconfigs for ordered bootstrap kubeconifigs.
 	// The secrets must be in the same namespace where the agent controller runs.
 	// +optional
-	LocalSecrets LocalSecretsConfig `json:"localSecretsConfig,omitempty"`
+	LocalSecrets *LocalSecretsConfig `json:"localSecretsConfig,omitempty"`
 }
 
 type LocalSecretsConfig struct {
@@ -227,17 +313,29 @@ type WorkAgentConfiguration struct {
 	// +optional
 	FeatureGates []FeatureGate `json:"featureGates,omitempty"`
 
-	// KubeAPIQPS indicates the maximum QPS while talking with apiserver of hub cluster from the spoke cluster.
+	// KubeAPIQPS indicates the maximum QPS while talking with apiserver on the spoke cluster.
 	// If it is set empty, use the default value: 50
 	// +optional
 	// +kubebuilder:default:=50
 	KubeAPIQPS int32 `json:"kubeAPIQPS,omitempty"`
 
-	// KubeAPIBurst indicates the maximum burst of the throttle while talking with apiserver of hub cluster from the spoke cluster.
+	// KubeAPIBurst indicates the maximum burst of the throttle while talking with apiserver on the spoke cluster.
 	// If it is set empty, use the default value: 100
 	// +optional
 	// +kubebuilder:default:=100
 	KubeAPIBurst int32 `json:"kubeAPIBurst,omitempty"`
+
+	// HubKubeAPIQPS indicates the maximum QPS while talking with apiserver on the hub cluster.
+	// If it is set empty, use the default value: 50
+	// +optional
+	// +kubebuilder:default:=50
+	HubKubeAPIQPS int32 `json:"hubKubeAPIQPS,omitempty"`
+
+	// HubKubeAPIBurst indicates the maximum burst of the throttle while talking with apiserver on the hub cluster.
+	// If it is set empty, use the default value: 100
+	// +optional
+	// +kubebuilder:default:=100
+	HubKubeAPIBurst int32 `json:"hubKubeAPIBurst,omitempty"`
 
 	// AppliedManifestWorkEvictionGracePeriod is the eviction grace period the work agent will wait before
 	// evicting the AppliedManifestWorks, whose corresponding ManifestWorks are missing on the hub cluster, from
@@ -246,6 +344,14 @@ type WorkAgentConfiguration struct {
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:Pattern="^([0-9]+(s|m|h))+$"
 	AppliedManifestWorkEvictionGracePeriod *metav1.Duration `json:"appliedManifestWorkEvictionGracePeriod,omitempty"`
+
+	// StatusSyncInterval is the interval for the work agent to check the status of ManifestWorks.
+	// Larger value means less frequent status sync and less api calls to the managed cluster, vice versa.
+	// The value(x) should be: 5s <= x <= 1h.
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:Pattern="^([0-9]+(s|m|h))+$"
+	StatusSyncInterval *metav1.Duration `json:"statusSyncInterval,omitempty"`
 }
 
 const (
@@ -280,6 +386,8 @@ type KlusterletStatus struct {
 	// Progressing: Components in the managed cluster are in a transitioning state.
 	// Degraded: Components in the managed cluster do not match the desired configuration and only provide
 	// degraded service.
+	// +listType=map
+	// +listMapKey=type
 	Conditions []metav1.Condition `json:"conditions"`
 
 	// Generations are used to determine when an item needs to be reconciled or has changed in a way that needs a reaction.

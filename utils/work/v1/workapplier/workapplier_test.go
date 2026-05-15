@@ -1,3 +1,4 @@
+// Copyright Contributors to the Open Cluster Management project
 package workapplier
 
 import (
@@ -71,7 +72,7 @@ func newFakeWork(name, namespace string, obj runtime.Object) *workapiv1.Manifest
 }
 
 func TestWorkApplierWithTypedClient(t *testing.T) {
-	fakeWorkClient := fakework.NewSimpleClientset()
+	fakeWorkClient := fakework.NewSimpleClientset() //nolint:staticcheck // NewClientset requires applyconfiguration which we don't generate
 	workInformerFactory := workinformers.NewSharedInformerFactory(fakeWorkClient, 10*time.Minute)
 	fakeWorkLister := workInformerFactory.Work().V1().ManifestWorks().Lister()
 	workApplier := NewWorkApplierWithTypedClient(fakeWorkClient, fakeWorkLister)
@@ -316,7 +317,7 @@ func Test_ManifestWorkEqual(t *testing.T) {
 }
 
 func TestCreateWork(t *testing.T) {
-	fakeWorkClient := fakework.NewSimpleClientset()
+	fakeWorkClient := fakework.NewSimpleClientset() //nolint:staticcheck // NewClientset requires applyconfiguration which we don't generate
 	fakeWorkClient.ClearActions()
 
 	workInformerFactory := workinformers.NewSharedInformerFactory(fakeWorkClient, 10*time.Minute)

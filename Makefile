@@ -1,3 +1,4 @@
+# Copyright Contributors to the Open Cluster Management project
 SHELL :=/bin/bash
 
 all: build
@@ -16,7 +17,7 @@ GO_BUILD_PACKAGES_EXPANDED :=$(GO_BUILD_PACKAGES)
 # LDFLAGS are not needed for dummy builds (saving time on calling git commands)
 GO_LD_FLAGS:=
 # controller-gen setup
-CONTROLLER_GEN_VERSION :=v0.15.0
+CONTROLLER_GEN_VERSION :=v0.20.1
 CONTROLLER_GEN :=$(PERMANENT_TMP_GOPATH)/bin/controller-gen
 ifneq "" "$(wildcard $(CONTROLLER_GEN))"
 _controller_gen_installed_version = $(shell $(CONTROLLER_GEN) --version | awk '{print $$2}')
@@ -35,28 +36,28 @@ $(call add-crd-gen,workv1,./work/v1,./work/v1,./work/v1)
 $(call add-crd-gen,workv1alpha1,./work/v1alpha1,./work/v1alpha1,./work/v1alpha1)
 $(call add-crd-gen,operator,./operator/v1,./operator/v1,./operator/v1)
 $(call add-crd-gen,addonv1alpha1,./addon/v1alpha1,./addon/v1alpha1,./addon/v1alpha1)
+$(call add-crd-gen,addonv1beta1,./addon/v1alpha1 ./addon/v1beta1,./addon/v1beta1,./addon/v1beta1)
 
 RUNTIME ?= podman
 RUNTIME_IMAGE_NAME ?= openshift-api-generator
 
 verify-gocilint:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.0
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0
 	go vet ./...
 	${GOPATH}/bin/golangci-lint run --timeout=3m ./...
 
 verify-scripts:
 	bash -x hack/verify-deepcopy.sh
-	bash -x hack/verify-swagger-docs.sh
 	bash -x hack/verify-crds.sh
 	bash -x hack/verify-codegen.sh
+	bash -x hack/verify-copyright.sh
 .PHONY: verify-scripts
 verify: check-env verify-scripts verify-codegen-crds verify-gocilint
 
 update-scripts:
 	hack/update-deepcopy.sh
-	hack/update-swagger-docs.sh
 	hack/update-codegen.sh
-	hack/update-v1beta1-crds.sh
+	hack/update-copyright.sh
 .PHONY: update-scripts
 update: check-env update-scripts update-codegen-crds
 
